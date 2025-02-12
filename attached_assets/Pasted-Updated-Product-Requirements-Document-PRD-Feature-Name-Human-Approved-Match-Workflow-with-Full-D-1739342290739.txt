@@ -1,0 +1,184 @@
+Updated Product Requirements Document (PRD)
+
+Feature Name: Human-Approved Match Workflow with Full Data Visibility, Traceability, and Detailed Calculation Transparency
+
+1. Product Overview
+
+This workflow builds a transparent, traceable system for matching checks, invoices, and deposits. It provides detailed insight into the mechanics of the Monte Carlo search function and Linear Regression model, ensuring that users can see how calculations are being performed. This transparency builds trust, improves decision-making, and captures user feedback to refine the system.
+
+2. Objectives
+	1.	Enable step-by-step visibility into match calculations:
+	•	Show all intermediate steps of the Monte Carlo simulation.
+	•	Provide the exact formula, coefficients, and feature values for Linear Regression.
+	2.	Ensure traceability by linking matches to their source data and calculation history.
+	3.	Support human decision-making by allowing users to approve, reject, or modify matches while providing feedback.
+
+3. Features
+
+3.1. Data Visibility
+	•	Match Overview:
+	•	List matches with confidence scores, key features (amount, date, memo), and their discrepancies.
+	•	Allow sorting and filtering by confidence level, discrepancies, or match status.
+	•	Detailed Calculation View:
+	•	Monte Carlo Simulation:
+	•	Show:
+	•	Input data (checks, invoices, and deposits in the simulation).
+	•	Number of iterations.
+	•	Likelihood score formula for each bundle.
+	•	Top N bundles with their probabilities.
+	•	Linear Regression:
+	•	Display:
+	•	Exact formula with feature values and coefficients.
+	•	Contribution of each feature to the final match probability.
+	•	Predicted probability for the selected match.
+
+3.2. Human Feedback Workflow
+	•	Approval/Reject Actions:
+	•	Approve: Confirm the match if confidence score and logic are acceptable.
+	•	Reject: Reject the match and provide feedback (e.g., “Amount discrepancy too high” or “Memo mismatch”).
+	•	Override:
+	•	Allow users to manually select a different match if the system’s suggestion is incorrect.
+	•	Feedback Loop:
+	•	Record all user actions (approve, reject, override) and their reasoning in the database for model retraining.
+
+3.3. Analytics and Reporting
+	•	Metrics Dashboard:
+	•	Match accuracy (approved vs. rejected matches).
+	•	Model performance (precision, recall, confidence distribution).
+	•	Audit log of all matches and user actions for traceability.
+	•	Visualization:
+	•	Graphs showing confidence score distribution and Monte Carlo iterations.
+
+4. Functional Requirements
+
+Dashboard Features
+	1.	Match List View:
+	•	Display:
+	•	Match ID, confidence score, amount difference, date difference, memo match.
+	•	Match status: Pending, Approved, Rejected.
+	•	Actions: Approve, Reject, or View Details.
+	2.	Match Details Panel:
+	•	Show all input data (checks, invoices, deposits).
+	•	Display calculation mechanics:
+	•	Monte Carlo results: Iterations, likelihood scores, and probabilities.
+	•	Linear Regression details: Coefficients, feature values, and final score.
+
+Backend Features
+	1.	Monte Carlo Simulation:
+	•	Generate potential bundles of checks.
+	•	Calculate likelihood scores for each bundle and return all intermediate results.
+	2.	Linear Regression:
+	•	Predict match probabilities based on feature values.
+	•	Return the full formula with feature weights and contributions.
+	3.	Feedback Storage:
+	•	Log user decisions and feedback for retraining the model.
+
+5. Detailed Calculation Transparency
+
+Monte Carlo Simulation Transparency
+
+For each match:
+	1.	Input Data:
+	•	List of checks, invoices, and deposit amounts.
+	•	Iteration count (e.g., 1000).
+	2.	Simulation Details:
+	•	Show top N bundles:
+	•	Bundle contents (check IDs and amounts).
+	•	Likelihood score for each bundle.
+	•	Display the formula for the likelihood score:
+
+Likelihood = 1 / (1 + amount_diff + date_diff - memo_match_bonus)
+
+	•	Highlight calculated values for each term.
+
+Linear Regression Transparency
+
+For each match:
+	1.	Feature Breakdown:
+	•	List input feature values:
+	•	Amount Difference: $0.50
+	•	Date Difference: 5 days
+	•	Memo Match: 1 (binary).
+	•	Coefficients:
+	•	Amount Diff Coefficient: -0.8
+	•	Date Diff Coefficient: -0.5
+	•	Memo Match Coefficient: +2.0
+	2.	Final Formula:
+
+Probability = (Amount Diff * -0.8) + (Date Diff * -0.5) + (Memo Match * 2.0)
+
+	•	Show a step-by-step calculation:
+
+Probability = (0.50 * -0.8) + (5 * -0.5) + (1 * 2.0)
+            = -0.4 + -2.5 + 2.0
+            = -0.9 (scaled to final confidence score: 85%)
+
+6. Non-Functional Requirements
+	•	Performance:
+	•	Dashboard should load matches and calculations within 2 seconds for up to 10,000 records.
+	•	Scalability:
+	•	Backend should support concurrent users and multiple data sources.
+	•	Security:
+	•	Data encryption in transit and at rest.
+	•	Role-based access control to limit data visibility.
+
+7. Success Metrics
+	1.	Transparency:
+	•		95% of users report understanding how match probabilities are calculated.
+	2.	Accuracy:
+	•		90% of human-reviewed matches align with system suggestions.
+	3.	Efficiency:
+	•	Reduce manual matching time by 70% within 6 months.
+
+Front-End Guide
+
+Framework: React.js or Streamlit
+
+Components
+	1.	Match List Table:
+	•	Columns: Match ID, Confidence Score, Amount Difference, Date Difference, Memo Match, Status.
+	•	Buttons: View Details, Approve, Reject.
+	2.	Match Details Panel:
+	•	Tabs for:
+	•	Monte Carlo Simulation: Show top bundles and likelihood formulas.
+	•	Linear Regression: Show feature breakdown, coefficients, and final formula.
+	•	Highlight discrepancies (e.g., amount or date mismatches) in red.
+
+Example UI for Match Details
+
+Match ID: 1
+Confidence Score: 85%
+
+Monte Carlo Simulation:
+- Iteration Count: 1000
+- Top Bundles:
+  1. Bundle: [Check 1, Check 2], Likelihood: 0.95
+  2. Bundle: [Check 3], Likelihood: 0.85
+Formula: Likelihood = 1 / (1 + amount_diff + date_diff - memo_match_bonus)
+
+Linear Regression:
+- Features:
+  Amount Diff: $0.50, Coefficient: -0.8
+  Date Diff: 5 days, Coefficient: -0.5
+  Memo Match: 1, Coefficient: +2.0
+- Formula: Probability = (Amount Diff * -0.8) + (Date Diff * -0.5) + (Memo Match * 2.0)
+- Result: Confidence = 85%
+
+Back-End Guide
+
+Framework: FastAPI
+
+Endpoints
+	1.	GET /matches:
+	•	Fetch list of matches with confidence scores and feature values.
+	2.	GET /match/{id}:
+	•	Fetch detailed calculations for a match (Monte Carlo and Linear Regression).
+	3.	POST /feedback:
+	•	Log user feedback (approve/reject).
+
+Deployment
+	•	Frontend: Deploy via Vercel or Netlify.
+	•	Backend: Deploy via AWS Lambda or Heroku.
+	•	Database: Use AWS RDS or Supabase for PostgreSQL.
+
+This updated PRD ensures full visibility and traceability of calculations, empowering users to trust and validate the matching system. Let me know if you need further refinements!

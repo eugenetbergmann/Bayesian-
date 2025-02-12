@@ -3,18 +3,35 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
+import { Separator } from "@/components/ui/separator";
 
 type MatchFactor = {
   name: string;
   weight: number;
   value: number;
+  explanation: string;
 };
 
 export default function BayesianMatchVisualizer() {
   const [matchFactors, setMatchFactors] = useState<MatchFactor[]>([
-    { name: "Amount", weight: 0.4, value: 0 },
-    { name: "Date", weight: 0.3, value: 0 },
-    { name: "Memo", weight: 0.3, value: 0 },
+    { 
+      name: "Amount", 
+      weight: 0.4, 
+      value: 0,
+      explanation: "Exact match = 100%, otherwise scaled by difference" 
+    },
+    { 
+      name: "Date", 
+      weight: 0.3, 
+      value: 0,
+      explanation: "Days difference affects score (max 30 days)" 
+    },
+    { 
+      name: "Memo", 
+      weight: 0.3, 
+      value: 0,
+      explanation: "Based on common words between memos" 
+    },
   ]);
 
   const [amount1, setAmount1] = useState("");
@@ -23,12 +40,39 @@ export default function BayesianMatchVisualizer() {
   const [date2, setDate2] = useState("");
   const [memo1, setMemo1] = useState("");
   const [memo2, setMemo2] = useState("");
+  const [calculations, setCalculations] = useState<string[]>([]);
 
   const calculateMatch = () => {
-    // Improved match calculation with similarity metrics
+    const newCalculations: string[] = [];
+
+    // Amount calculation
     const amountMatch = calculateAmountSimilarity(amount1, amount2);
+    newCalculations.push(`Amount Similarity: ${(amountMatch * 100).toFixed(1)}%`);
+    if (amount1 && amount2) {
+      const amt1 = parseFloat(amount1);
+      const amt2 = parseFloat(amount2);
+      newCalculations.push(`Amount Difference: $${Math.abs(amt1 - amt2).toFixed(2)}`);
+    }
+
+    // Date calculation
     const dateMatch = calculateDateSimilarity(date1, date2);
+    newCalculations.push(`Date Similarity: ${(dateMatch * 100).toFixed(1)}%`);
+    if (date1 && date2) {
+      const days = Math.abs((new Date(date1).getTime() - new Date(date2).getTime()) / (1000 * 60 * 60 * 24));
+      newCalculations.push(`Days Apart: ${days.toFixed(1)} days`);
+    }
+
+    // Memo calculation
     const memoMatch = calculateMemoSimilarity(memo1, memo2);
+    newCalculations.push(`Memo Similarity: ${(memoMatch * 100).toFixed(1)}%`);
+    if (memo1 && memo2) {
+      const words1 = memo1.toLowerCase().split(/\s+/);
+      const words2 = memo2.toLowerCase().split(/\s+/);
+      const commonWords = words1.filter(word => words2.includes(word));
+      newCalculations.push(`Common Words: ${commonWords.join(", ") || "None"}`);
+    }
+
+    setCalculations(newCalculations);
 
     setMatchFactors([
       { ...matchFactors[0], value: amountMatch },
@@ -71,6 +115,12 @@ export default function BayesianMatchVisualizer() {
     return "bg-rose-500";
   };
 
+  const getConfidenceLabel = (value: number) => {
+    if (value >= 85) return "High Confidence";
+    if (value >= 60) return "Medium Confidence";
+    return "Low Confidence";
+  };
+
   return (
     <div className="space-y-6 max-w-5xl mx-auto">
       <Card className="border-none shadow-lg">
@@ -78,7 +128,12 @@ export default function BayesianMatchVisualizer() {
           <CardTitle className="text-xl font-semibold">Match Confidence Analysis</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="text-4xl font-bold mb-4 text-primary">{totalConfidence.toFixed(1)}%</div>
+          <div className="text-4xl font-bold mb-4 text-primary">
+            {totalConfidence.toFixed(1)}%
+            <span className="text-lg ml-2 font-normal text-muted-foreground">
+              ({getConfidenceLabel(totalConfidence)})
+            </span>
+          </div>
           <Progress 
             value={totalConfidence} 
             className="h-3 rounded-full bg-slate-200"
@@ -88,7 +143,9 @@ export default function BayesianMatchVisualizer() {
             {matchFactors.map((factor) => (
               <div key={factor.name} className="bg-card rounded-lg p-4">
                 <div className="flex justify-between text-sm mb-2">
-                  <span className="font-medium">{factor.name}</span>
+                  <span className="font-medium">
+                    {factor.name} (Weight: {(factor.weight * 100).toFixed()}%)
+                  </span>
                   <span className="text-primary">{(factor.value * 100).toFixed(1)}%</span>
                 </div>
                 <Progress 
@@ -96,9 +153,26 @@ export default function BayesianMatchVisualizer() {
                   className="h-2 rounded-full bg-slate-200"
                   indicatorClassName={getConfidenceColor(factor.value * 100)}
                 />
+                <p className="text-sm text-muted-foreground mt-2">
+                  {factor.explanation}
+                </p>
               </div>
             ))}
           </div>
+
+          {calculations.length > 0 && (
+            <>
+              <Separator className="my-6" />
+              <div className="space-y-2">
+                <h3 className="font-medium">Detailed Calculations</h3>
+                {calculations.map((calc, index) => (
+                  <p key={index} className="text-sm text-muted-foreground">
+                    {calc}
+                  </p>
+                ))}
+              </div>
+            </>
+          )}
         </CardContent>
       </Card>
 
