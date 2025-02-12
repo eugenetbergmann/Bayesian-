@@ -10,6 +10,30 @@ export const users = pgTable("users", {
   role: text("role", { enum: ["approver", "analyst", "developer"] }).notNull().default("analyst"),
 });
 
+// Normalized transaction table with inline self-reference
+export const transactions = pgTable("transactions", {
+  id: serial("id").primaryKey(),
+  amount: decimal("amount", { precision: 10, scale: 2 }).notNull(),
+  date: timestamp("date").notNull(),
+  memo: text("memo"),
+  source: text("source", { enum: ["plaid", "quickbooks", "housecall"] }).notNull(),
+  sourceId: text("source_id").notNull(),
+  sourceType: text("source_type"), // e.g., payment, invoice, deposit
+  status: text("status"), // e.g., pending, completed, cancelled
+  category: text("category"), // normalized business category
+  matchProbability: decimal("match_probability", { precision: 5, scale: 4 }),
+  matchedTransactionId: integer("matched_transaction_id").references(() => transactions.id, { onDelete: "set null" }),
+  reviewStatus: text("review_status", { enum: ["pending", "approved", "rejected"] }).default("pending"),
+  reviewerId: integer("reviewer_id").references(() => users.id),
+  metadata: jsonb("metadata"), // Additional normalized fields
+  bayesianScore: decimal("bayesian_score", { precision: 5, scale: 4 }), // Added for Bayesian algorithm
+  monteCarloIterations: integer("monte_carlo_iterations"), // Track MC simulation iterations
+  matchConfidence: decimal("match_confidence", { precision: 5, scale: 4 }), // Overall confidence score
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+
 // Raw data tables for each source
 export const plaidTransactions = pgTable("plaid_transactions", {
   id: serial("id").primaryKey(),
@@ -35,26 +59,6 @@ export const housecallTransactions = pgTable("housecall_transactions", {
   normalizedTransactionId: integer("normalized_transaction_id").references(() => transactions.id),
 });
 
-// Normalized transaction table
-export const transactions = pgTable("transactions", {
-  id: serial("id").primaryKey(),
-  amount: decimal("amount", { precision: 10, scale: 2 }).notNull(),
-  date: timestamp("date").notNull(),
-  memo: text("memo"),
-  source: text("source", { enum: ["plaid", "quickbooks", "housecall"] }).notNull(),
-  sourceId: text("source_id").notNull(),
-  sourceType: text("source_type"), // e.g., payment, invoice, deposit
-  status: text("status"), // e.g., pending, completed, cancelled
-  category: text("category"), // normalized business category
-  matchProbability: decimal("match_probability", { precision: 5, scale: 4 }),
-  matchedTransactionId: integer("matched_transaction_id").references(() => transactions.id),
-  reviewStatus: text("review_status", { enum: ["pending", "approved", "rejected"] }).default("pending"),
-  reviewerId: integer("reviewer_id").references(() => users.id),
-  metadata: jsonb("metadata"), // Additional normalized fields
-  createdAt: timestamp("created_at").defaultNow(),
-  updatedAt: timestamp("updated_at").defaultNow(),
-});
-
 // Insert schemas
 export const insertUserSchema = createInsertSchema(users).pick({
   username: true,
@@ -68,6 +72,9 @@ export const insertTransactionSchema = createInsertSchema(transactions).omit({
   matchedTransactionId: true,
   reviewStatus: true,
   reviewerId: true,
+  bayesianScore: true,
+  monteCarloIterations: true,
+  matchConfidence: true,
   createdAt: true,
   updatedAt: true,
 });
