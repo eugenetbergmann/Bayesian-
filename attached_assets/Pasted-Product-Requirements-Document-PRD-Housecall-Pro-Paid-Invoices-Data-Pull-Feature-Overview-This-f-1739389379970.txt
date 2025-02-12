@@ -1,0 +1,105 @@
+Product Requirements Document (PRD): Housecall Pro Paid Invoices Data Pull
+
+Feature Overview
+
+This feature enables the Replit app to restructure and enhance the existing Housecall Pro API integration to pull all paid invoices data, ensuring comprehensive and accurate synchronization with the PostgreSQL database.
+
+Objectives
+	1.	Modify the API integration to:
+	•	Pull only paid invoices.
+	•	Include all relevant fields as documented in the Housecall Pro API documentation.
+	2.	Store the fetched data in the existing Invoice model in PostgreSQL.
+	3.	Ensure accurate data normalization for future use in algorithms (e.g., Bayesian, Monte Carlo, linear regression).
+	4.	Log API errors effectively and provide meaningful responses to users.
+
+Functional Requirements
+
+API Server Address
+
+Use the correct API server address as specified in the documentation:
+	•	Base URL: https://api.housecallpro.com/v1/
+
+Endpoint
+	•	Use the GET /invoices endpoint with a query parameter to filter only paid invoices:
+
+status=paid
+
+Data Fields
+
+Pull the following fields for each paid invoice and ensure they are stored in the database:
+	1.	Invoice ID (id)
+	2.	Invoice Number (invoice_number)
+	3.	Customer Name (to be fetched if not included in the response)
+	4.	Invoice Date (invoice_date)
+	5.	Service Date (service_date)
+	6.	Paid Date (paid_at)
+	7.	Amount (amount) - Convert from cents to dollars.
+	8.	Due Amount (due_amount) - Convert from cents to dollars.
+	9.	Invoice Status (status)
+	10.	Due Date (due_at)
+	11.	Job ID (job_id)
+
+Data Normalization
+	1.	Convert amount and due_amount from cents to dollars.
+	2.	Parse all date fields (e.g., invoice_date, paid_at) into UTC datetime format using ISO 8601 standard.
+	3.	If any field is missing, store NULL in the database for that field.
+
+Error Handling
+	1.	Log errors with clear messages (e.g., API connection failures, invalid responses).
+	2.	Raise a custom APIError with meaningful error messages for:
+	•	Non-200 HTTP responses.
+	•	Exceptions during the API request.
+
+Database Integration
+	1.	Add or update the Invoice model:
+	•	If an invoice with the same housecall_id exists, update its fields.
+	•	Otherwise, insert a new record.
+	2.	Commit changes to the database after processing all invoices.
+
+Endpoints
+
+API Route: /invoices
+	•	Method: GET
+	•	Query Parameters:
+	•	per_page: (optional) Number of invoices per page.
+	•	cached: (optional, default=false) If true, return cached data from the database.
+
+Logging
+	1.	Log every request to Housecall Pro with endpoint and parameters.
+	2.	Log the status code and response data for debugging purposes.
+
+Technical Requirements
+
+Updates to the Existing Code
+
+Update HousecallAPI.get_invoices
+	1.	Modify params to include the filter for paid invoices:
+
+params = {
+    'status': 'paid',
+    'per_page': per_page or Config.DEFAULT_PER_PAGE
+}
+
+
+	2.	Update the Invoice model’s integration to handle normalization and data insertion as specified.
+
+Update /invoices Endpoint
+	•	Ensure the endpoint handles the new functionality and properly normalizes the paid invoices data.
+
+Non-Functional Requirements
+	1.	Performance: Ensure the API pull is efficient, especially with large datasets.
+	2.	Scalability: Prepare the system for future enhancements, such as fetching additional related data (e.g., customer details).
+	3.	Reliability: Ensure error handling and logging provide stability for production environments.
+
+Milestones
+	1.	Update the get_invoices method to pull only paid invoices.
+	2.	Normalize the data and store it in the PostgreSQL database.
+	3.	Test the functionality with mocked responses and the live API.
+	4.	Deploy the changes and verify production performance.
+
+Testing & Validation
+	1.	Test API integration with various scenarios (e.g., no invoices, API downtime).
+	2.	Validate that only status=paid invoices are fetched and stored correctly.
+	3.	Verify error handling by simulating API failures.
+
+This PRD ensures the proper restructuring of the Housecall Pro API integration while adhering to project objectives and technical requirements.
