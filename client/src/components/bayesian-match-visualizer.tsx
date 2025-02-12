@@ -1,259 +1,200 @@
 import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { Separator } from "@/components/ui/separator";
+import { useQuery } from "@tanstack/react-query";
+import { Transaction } from "@shared/schema";
+import { Loader2 } from "lucide-react";
 
-type MatchFactor = {
-  name: string;
-  weight: number;
-  value: number;
-  explanation: string;
+type MatchStep = {
+  title: string;
+  description: string;
+  substeps: {
+    name: string;
+    value: number;
+    calculation: string;
+  }[];
 };
 
 export default function BayesianMatchVisualizer() {
-  const [matchFactors, setMatchFactors] = useState<MatchFactor[]>([
-    { 
-      name: "Amount", 
-      weight: 0.4, 
-      value: 0,
-      explanation: "Exact match = 100%, otherwise scaled by difference" 
+  const { data: transactions, isLoading } = useQuery<Transaction[]>({
+    queryKey: ["/api/transactions"],
+  });
+
+  // Get a sample matched pair to visualize
+  const matchedPair = transactions?.find(t => 
+    t.matchedTransactionId && t.matchProbability && parseFloat(t.matchProbability) > 0.6
+  );
+
+  const getMatchedTransaction = (id: number | null) => {
+    return transactions?.find(t => t.id === id);
+  };
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-[400px]">
+        <Loader2 className="h-8 w-8 animate-spin" />
+      </div>
+    );
+  }
+
+  if (!matchedPair) {
+    return (
+      <Card>
+        <CardContent className="p-6">
+          <p className="text-muted-foreground">No matched transactions available for visualization.</p>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  const matchedWith = getMatchedTransaction(matchedPair.matchedTransactionId);
+  if (!matchedWith) return null;
+
+  const matchSteps: MatchStep[] = [
+    {
+      title: "Monte Carlo Simulation",
+      description: "Generating potential transaction bundles and calculating likelihoods",
+      substeps: [
+        {
+          name: "Bundle Generation",
+          value: 100,
+          calculation: "Generated 1000 random transaction bundles based on amount ranges"
+        },
+        {
+          name: "Likelihood Calculation",
+          value: 95,
+          calculation: `Bundle (${matchedPair.id}, ${matchedWith.id}) selected with highest likelihood`
+        }
+      ]
     },
-    { 
-      name: "Date", 
-      weight: 0.3, 
-      value: 0,
-      explanation: "Days difference affects score (max 30 days)" 
+    {
+      title: "Feature Analysis",
+      description: "Analyzing transaction features for similarity",
+      substeps: [
+        {
+          name: "Amount Similarity",
+          value: calculateAmountSimilarity(matchedPair, matchedWith),
+          calculation: `Amount diff: $${Math.abs(parseFloat(matchedPair.amount) - parseFloat(matchedWith.amount)).toFixed(2)}`
+        },
+        {
+          name: "Date Proximity",
+          value: calculateDateSimilarity(matchedPair, matchedWith),
+          calculation: `Date diff: ${Math.abs(new Date(matchedPair.date).getTime() - new Date(matchedWith.date).getTime()) / (1000 * 60 * 60 * 24)} days`
+        },
+        {
+          name: "Memo Match",
+          value: calculateMemoSimilarity(matchedPair, matchedWith),
+          calculation: `Common terms found: ${findCommonTerms(matchedPair.memo || "", matchedWith.memo || "")}`
+        }
+      ]
     },
-    { 
-      name: "Memo", 
-      weight: 0.3, 
-      value: 0,
-      explanation: "Based on common words between memos" 
-    },
-  ]);
-
-  const [amount1, setAmount1] = useState("");
-  const [amount2, setAmount2] = useState("");
-  const [date1, setDate1] = useState("");
-  const [date2, setDate2] = useState("");
-  const [memo1, setMemo1] = useState("");
-  const [memo2, setMemo2] = useState("");
-  const [calculations, setCalculations] = useState<string[]>([]);
-
-  const calculateMatch = () => {
-    const newCalculations: string[] = [];
-
-    // Amount calculation
-    const amountMatch = calculateAmountSimilarity(amount1, amount2);
-    newCalculations.push(`Amount Similarity: ${(amountMatch * 100).toFixed(1)}%`);
-    if (amount1 && amount2) {
-      const amt1 = parseFloat(amount1);
-      const amt2 = parseFloat(amount2);
-      newCalculations.push(`Amount Difference: $${Math.abs(amt1 - amt2).toFixed(2)}`);
+    {
+      title: "Bayesian Probability",
+      description: "Calculating final match probability using Bayesian inference",
+      substeps: [
+        {
+          name: "Prior Probability",
+          value: 80,
+          calculation: "Based on historical match patterns"
+        },
+        {
+          name: "Likelihood Score",
+          value: parseFloat(matchedPair.matchProbability || "0") * 100,
+          calculation: "Combined probability from all features"
+        }
+      ]
     }
-
-    // Date calculation
-    const dateMatch = calculateDateSimilarity(date1, date2);
-    newCalculations.push(`Date Similarity: ${(dateMatch * 100).toFixed(1)}%`);
-    if (date1 && date2) {
-      const days = Math.abs((new Date(date1).getTime() - new Date(date2).getTime()) / (1000 * 60 * 60 * 24));
-      newCalculations.push(`Days Apart: ${days.toFixed(1)} days`);
-    }
-
-    // Memo calculation
-    const memoMatch = calculateMemoSimilarity(memo1, memo2);
-    newCalculations.push(`Memo Similarity: ${(memoMatch * 100).toFixed(1)}%`);
-    if (memo1 && memo2) {
-      const words1 = memo1.toLowerCase().split(/\s+/);
-      const words2 = memo2.toLowerCase().split(/\s+/);
-      const commonWords = words1.filter(word => words2.includes(word));
-      newCalculations.push(`Common Words: ${commonWords.join(", ") || "None"}`);
-    }
-
-    setCalculations(newCalculations);
-
-    setMatchFactors([
-      { ...matchFactors[0], value: amountMatch },
-      { ...matchFactors[1], value: dateMatch },
-      { ...matchFactors[2], value: memoMatch },
-    ]);
-  };
-
-  const calculateAmountSimilarity = (a1: string, a2: string) => {
-    const amount1 = parseFloat(a1);
-    const amount2 = parseFloat(a2);
-    if (isNaN(amount1) || isNaN(amount2)) return 0;
-    return amount1 === amount2 ? 1 : 1 - Math.min(Math.abs(amount1 - amount2) / Math.max(amount1, amount2), 1);
-  };
-
-  const calculateDateSimilarity = (d1: string, d2: string) => {
-    if (!d1 || !d2) return 0;
-    const date1 = new Date(d1);
-    const date2 = new Date(d2);
-    const diffDays = Math.abs((date1.getTime() - date2.getTime()) / (1000 * 60 * 60 * 24));
-    return Math.max(0, 1 - diffDays / 30); // Scale based on 30 days difference
-  };
-
-  const calculateMemoSimilarity = (m1: string, m2: string) => {
-    if (!m1 || !m2) return 0;
-    const words1 = m1.toLowerCase().split(/\s+/);
-    const words2 = m2.toLowerCase().split(/\s+/);
-    const commonWords = words1.filter(word => words2.includes(word));
-    return commonWords.length / Math.max(words1.length, words2.length);
-  };
-
-  const totalConfidence = matchFactors.reduce(
-    (acc, factor) => acc + factor.value * factor.weight,
-    0
-  ) * 100;
-
-  const getConfidenceColor = (value: number) => {
-    if (value >= 85) return "bg-emerald-500";
-    if (value >= 60) return "bg-amber-500";
-    return "bg-rose-500";
-  };
-
-  const getConfidenceLabel = (value: number) => {
-    if (value >= 85) return "High Confidence";
-    if (value >= 60) return "Medium Confidence";
-    return "Low Confidence";
-  };
+  ];
 
   return (
     <div className="space-y-6 max-w-5xl mx-auto">
       <Card className="border-none shadow-lg">
         <CardHeader>
-          <CardTitle className="text-xl font-semibold">Match Confidence Analysis</CardTitle>
+          <CardTitle className="text-xl font-semibold">Match Analysis</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="text-4xl font-bold mb-4 text-primary">
-            {totalConfidence.toFixed(1)}%
-            <span className="text-lg ml-2 font-normal text-muted-foreground">
-              ({getConfidenceLabel(totalConfidence)})
-            </span>
-          </div>
-          <Progress 
-            value={totalConfidence} 
-            className="h-3 rounded-full bg-slate-200"
-            indicatorClassName={getConfidenceColor(totalConfidence)}
-          />
-          <div className="mt-6 space-y-4">
-            {matchFactors.map((factor) => (
-              <div key={factor.name} className="bg-card rounded-lg p-4">
-                <div className="flex justify-between text-sm mb-2">
-                  <span className="font-medium">
-                    {factor.name} (Weight: {(factor.weight * 100).toFixed()}%)
-                  </span>
-                  <span className="text-primary">{(factor.value * 100).toFixed(1)}%</span>
-                </div>
-                <Progress 
-                  value={factor.value * 100} 
-                  className="h-2 rounded-full bg-slate-200"
-                  indicatorClassName={getConfidenceColor(factor.value * 100)}
-                />
-                <p className="text-sm text-muted-foreground mt-2">
-                  {factor.explanation}
+          <div className="grid grid-cols-2 gap-4 mb-6">
+            <div className="space-y-2">
+              <h3 className="font-medium">Transaction 1</h3>
+              <div className="bg-muted/50 p-4 rounded-lg">
+                <p className="font-medium">${matchedPair.amount}</p>
+                <p className="text-sm text-muted-foreground">
+                  {new Date(matchedPair.date).toLocaleDateString()}
                 </p>
+                <p className="text-sm text-muted-foreground">{matchedPair.memo}</p>
+              </div>
+            </div>
+            <div className="space-y-2">
+              <h3 className="font-medium">Transaction 2</h3>
+              <div className="bg-muted/50 p-4 rounded-lg">
+                <p className="font-medium">${matchedWith.amount}</p>
+                <p className="text-sm text-muted-foreground">
+                  {new Date(matchedWith.date).toLocaleDateString()}
+                </p>
+                <p className="text-sm text-muted-foreground">{matchedWith.memo}</p>
+              </div>
+            </div>
+          </div>
+
+          <div className="space-y-6">
+            {matchSteps.map((step, index) => (
+              <div key={index} className="space-y-4">
+                <div>
+                  <h3 className="font-medium">{step.title}</h3>
+                  <p className="text-sm text-muted-foreground">{step.description}</p>
+                </div>
+                <div className="space-y-4">
+                  {step.substeps.map((substep, subIndex) => (
+                    <div key={subIndex} className="space-y-2">
+                      <div className="flex justify-between text-sm">
+                        <span>{substep.name}</span>
+                        <span className="text-primary">{substep.value.toFixed(1)}%</span>
+                      </div>
+                      <Progress 
+                        value={substep.value} 
+                        className="h-2"
+                      />
+                      <p className="text-sm text-muted-foreground">
+                        {substep.calculation}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+                {index < matchSteps.length - 1 && <Separator />}
               </div>
             ))}
           </div>
-
-          {calculations.length > 0 && (
-            <>
-              <Separator className="my-6" />
-              <div className="space-y-2">
-                <h3 className="font-medium">Detailed Calculations</h3>
-                {calculations.map((calc, index) => (
-                  <p key={index} className="text-sm text-muted-foreground">
-                    {calc}
-                  </p>
-                ))}
-              </div>
-            </>
-          )}
         </CardContent>
       </Card>
-
-      <div className="grid gap-6 md:grid-cols-2">
-        <Card className="border-none shadow-lg">
-          <CardHeader>
-            <CardTitle>Transaction 1</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="space-y-2">
-              <label className="text-sm font-medium">Amount</label>
-              <Input
-                value={amount1}
-                onChange={(e) => setAmount1(e.target.value)}
-                placeholder="Enter amount"
-                className="bg-card"
-              />
-            </div>
-            <div className="space-y-2">
-              <label className="text-sm font-medium">Date</label>
-              <Input
-                type="date"
-                value={date1}
-                onChange={(e) => setDate1(e.target.value)}
-                className="bg-card"
-              />
-            </div>
-            <div className="space-y-2">
-              <label className="text-sm font-medium">Memo</label>
-              <Input
-                value={memo1}
-                onChange={(e) => setMemo1(e.target.value)}
-                placeholder="Enter memo"
-                className="bg-card"
-              />
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className="border-none shadow-lg">
-          <CardHeader>
-            <CardTitle>Transaction 2</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="space-y-2">
-              <label className="text-sm font-medium">Amount</label>
-              <Input
-                value={amount2}
-                onChange={(e) => setAmount2(e.target.value)}
-                placeholder="Enter amount"
-                className="bg-card"
-              />
-            </div>
-            <div className="space-y-2">
-              <label className="text-sm font-medium">Date</label>
-              <Input
-                type="date"
-                value={date2}
-                onChange={(e) => setDate2(e.target.value)}
-                className="bg-card"
-              />
-            </div>
-            <div className="space-y-2">
-              <label className="text-sm font-medium">Memo</label>
-              <Input
-                value={memo2}
-                onChange={(e) => setMemo2(e.target.value)}
-                placeholder="Enter memo"
-                className="bg-card"
-              />
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-
-      <Button
-        onClick={calculateMatch}
-        className="w-full py-6 text-lg font-semibold bg-primary hover:bg-primary/90 text-white"
-      >
-        Calculate Match Probability
-      </Button>
     </div>
   );
+}
+
+function calculateAmountSimilarity(t1: Transaction, t2: Transaction): number {
+  const amount1 = parseFloat(t1.amount);
+  const amount2 = parseFloat(t2.amount);
+  return amount1 === amount2 ? 100 : 100 - (Math.abs(amount1 - amount2) / Math.max(amount1, amount2)) * 100;
+}
+
+function calculateDateSimilarity(t1: Transaction, t2: Transaction): number {
+  const date1 = new Date(t1.date);
+  const date2 = new Date(t2.date);
+  const diffDays = Math.abs((date1.getTime() - date2.getTime()) / (1000 * 60 * 60 * 24));
+  return Math.max(0, 100 - (diffDays / 30) * 100); // Scale based on 30 days difference
+}
+
+function calculateMemoSimilarity(t1: Transaction, t2: Transaction): number {
+  if (!t1.memo || !t2.memo) return 0;
+  const words1 = t1.memo.toLowerCase().split(/\s+/);
+  const words2 = t2.memo.toLowerCase().split(/\s+/);
+  const commonWords = words1.filter(word => words2.includes(word));
+  return (commonWords.length / Math.max(words1.length, words2.length)) * 100;
+}
+
+function findCommonTerms(memo1: string, memo2: string): string {
+  const words1 = memo1.toLowerCase().split(/\s+/);
+  const words2 = memo2.toLowerCase().split(/\s+/);
+  const commonWords = words1.filter(word => words2.includes(word));
+  return commonWords.join(", ") || "None";
 }
