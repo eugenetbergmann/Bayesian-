@@ -1,0 +1,215 @@
+Here’s a Product Requirements Document (PRD) and a comprehensive front-end/back-end implementation guide for the dashboard and the automated matching system.
+
+Product Requirements Document (PRD)
+
+1. Product Overview
+
+The goal is to develop a system that starts as a human-supervised dashboard for matching checks, invoices, and deposits. Over time, the system transitions into an automated process by integrating feedback to refine its model.
+
+2. Features
+
+Phase 1: Human-Supervised Dashboard
+	•	Match Suggestions:
+	•	Display checks, invoices, and deposits with confidence scores.
+	•	Highlight discrepancies (amount, date, memo).
+	•	User Actions:
+	•	Confirm matches.
+	•	Reject or override matches.
+	•	Provide feedback (reason for rejection).
+	•	Analytics:
+	•	Metrics on confirmed/rejected matches.
+	•	Model performance (precision, recall, confidence threshold).
+
+Phase 2: Semi-Automated Matching
+	•	Automate matches above a predefined confidence threshold.
+	•	Route ambiguous matches to the dashboard.
+
+Phase 3: Fully Automated Matching
+	•	Automate all matching processes.
+	•	Retain periodic human review for performance monitoring.
+	•	Include fallback mechanisms for unresolvable cases.
+
+3. Functional Requirements
+
+Dashboard Features
+	1.	Data Display:
+	•	List checks, invoices, and deposits.
+	•	Show calculated confidence scores and feature details.
+	2.	Actions:
+	•	Confirm, reject, or edit matches.
+	•	Log reasons for manual changes.
+	3.	Feedback Storage:
+	•	Store confirmed/rejected matches and feedback for retraining the model.
+
+Backend
+	•	Data Normalization:
+	•	Convert check, invoice, and deposit data into a unified format.
+	•	Monte Carlo Matching:
+	•	Generate potential bundles and calculate likelihood scores.
+	•	Bayesian Prediction:
+	•	Update priors based on feedback to improve future matches.
+	•	Threshold-Based Automation:
+	•	Automatically match items above a confidence threshold.
+
+Database
+	•	Store:
+	•	Checks, invoices, and deposits.
+	•	Suggested matches and their confidence scores.
+	•	User feedback and corrections.
+	•	Model performance metrics.
+
+4. Non-Functional Requirements
+	•	Performance: The dashboard should handle up to 10,000 records without latency issues.
+	•	Scalability: Backend should support additional data sources as the business grows.
+	•	Security:
+	•	Ensure data encryption for sensitive financial information.
+	•	Implement role-based access control for dashboard users.
+
+5. Success Metrics
+	•	Accuracy: >95% for automated matches after Phase 3.
+	•	Feedback: >80% of human-reviewed matches align with initial predictions by Phase 2.
+	•	Efficiency: Reduce manual matching time by 80% within 6 months of implementation.
+
+Front-End/Back-End Guide
+
+Front-End Implementation
+
+Framework
+	•	Use React.js or Streamlit for a dynamic and interactive user interface.
+
+Components
+	1.	Dashboard View:
+	•	Table View:
+	•	Display matches (checks, invoices, deposits) with key details:
+	•	Amount differences, date differences, memo matches.
+	•	Highlight discrepancies.
+	•	Match Details Panel:
+	•	Provide expanded details for a selected match (e.g., all features contributing to the confidence score).
+	2.	User Actions:
+	•	Buttons for:
+	•	Confirm: Mark a match as correct.
+	•	Reject: Mark a match as incorrect and provide feedback.
+	•	A feedback form (optional).
+	3.	Analytics Dashboard:
+	•	Display:
+	•	Total matches confirmed/rejected.
+	•	Model performance (precision, recall, etc.).
+	•	Graphs showing match confidence distribution.
+
+Example React Component
+
+import React, { useState } from "react";
+
+function MatchDashboard({ matches }) {
+  const [feedback, setFeedback] = useState({});
+
+  const handleConfirm = (id) => {
+    console.log(`Match ${id} confirmed`);
+    // Send confirmation to backend
+  };
+
+  const handleReject = (id, reason) => {
+    console.log(`Match ${id} rejected with reason: ${reason}`);
+    // Send rejection feedback to backend
+  };
+
+  return (
+    <div>
+      <h1>Invoice Matching Dashboard</h1>
+      {matches.map((match) => (
+        <div key={match.id}>
+          <h3>Match ID: {match.id}</h3>
+          <p>Confidence: {match.confidence}%</p>
+          <p>Amount Difference: ${match.amount_diff}</p>
+          <p>Date Difference: {match.date_diff} days</p>
+          <button onClick={() => handleConfirm(match.id)}>Confirm</button>
+          <button
+            onClick={() => handleReject(match.id, feedback[match.id] || "No reason provided")}
+          >
+            Reject
+          </button>
+          <input
+            type="text"
+            placeholder="Provide feedback"
+            onChange={(e) =>
+              setFeedback({ ...feedback, [match.id]: e.target.value })
+            }
+          />
+        </div>
+      ))}
+    </div>
+  );
+}
+
+export default MatchDashboard;
+
+Back-End Implementation
+
+Framework
+	•	Use FastAPI (Python) for API development and PostgreSQL for data storage.
+
+Endpoints
+	1.	GET /matches:
+	•	Fetch check-invoice-deposit matches and their confidence scores.
+	•	Include details like amount differences, date differences, and memo matches.
+	2.	POST /confirm_match:
+	•	Accept a match ID and mark it as confirmed.
+	3.	POST /reject_match:
+	•	Accept a match ID and rejection reason.
+	•	Store feedback for model retraining.
+	4.	GET /analytics:
+	•	Return match performance metrics for the analytics dashboard.
+
+Example API
+
+from fastapi import FastAPI
+from pydantic import BaseModel
+
+app = FastAPI()
+
+# Simulated Data
+matches = [
+    {"id": 1, "amount_diff": 0.01, "date_diff": 2, "confidence": 98},
+    {"id": 2, "amount_diff": 0.50, "date_diff": 5, "confidence": 85},
+]
+
+# Models
+class Feedback(BaseModel):
+    match_id: int
+    reason: str
+
+@app.get("/matches")
+def get_matches():
+    return matches
+
+@app.post("/confirm_match")
+def confirm_match(match_id: int):
+    return {"status": "Match confirmed", "match_id": match_id}
+
+@app.post("/reject_match")
+def reject_match(feedback: Feedback):
+    return {"status": "Match rejected", "match_id": feedback.match_id, "reason": feedback.reason}
+
+Database Design
+
+Table Name	Columns
+matches	id, check_id, invoice_id, confidence, amount_diff, date_diff
+feedback	id, match_id, action (confirm/reject), reason, timestamp
+analytics	id, metric_name, value, timestamp
+
+Pipeline for Model Feedback
+	1.	Data Ingestion:
+	•	Collect human feedback (confirmed/rejected matches).
+	•	Update the Bayesian priors using the new feedback data.
+	2.	Model Retraining:
+	•	Retrain the regression and Bayesian models periodically with feedback.
+	•	Evaluate performance and adjust the confidence threshold.
+	3.	Deployment:
+	•	Integrate retrained models into the backend.
+
+Deployment
+	•	Frontend: Host on Vercel or Netlify.
+	•	Backend: Deploy via AWS Lambda or Heroku.
+	•	Database: Use PostgreSQL on AWS RDS or Supabase.
+
+This guide provides a detailed roadmap for building, iterating, and scaling the system. Let me know if you’d like further technical details!
