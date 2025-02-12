@@ -1,0 +1,131 @@
+Project Requirements Document
+
+1. Project Overview
+
+This project is an automated transaction matching application designed for businesses offering fractional CFO services, particularly targeting HVAC companies. It pulls data from Housecall Pro, QuickBooks, and Plaid (via Rows.com) to automatically reconcile transactions. By using Bayesian reasoning and Monte Carlo simulations, the application automates the matching process for check payments while flagging uncertain matches for manual review. The idea came from the need to streamline financial reconciliation processes and drive cost savings through automated data processing.
+
+The tool is being built to serve internal users, specifically for internal cost savings and efficiency gains, with roles such as approver, analyst, and developer. The key objectives are to reduce manual effort in financial matching, provide a transparent dashboard with match probabilities and detailed AI reasoning, and continuously learn from manual reviews to improve the matching accuracy over time. Success will be measured by faster reconciliation cycles, fewer manual interventions over time, and improved accuracy in matching transactions, leading to a more efficient internal financial process.
+
+2. In-Scope vs. Out-of-Scope
+
+In-Scope:
+
+Integration with Housecall Pro, QuickBooks, and Plaid via Rows.com to gather transaction data.
+
+Implementation of a matching engine using Python that leverages Bayesian reasoning and Monte Carlo simulations.
+
+Daily ingestion of transaction data and updating check, ACH, and credit card transactions automatically (delayed check transactions handling).
+
+An interactive, React-based (V0) dashboard using the Supabase JS SDK and styled with TailwindCSS.
+
+Interfaces including:
+
+Dashboard: Displaying all transactions, match probabilities, and flagged items.
+UploadPlaidFile: Handling manual file uploads/syncing from Plaid via Rows.com.
+ReviewFlags: Allowing approvers to inspect and manually approve/reject flagged matches.
+Role-based access control for approver, analyst (read-only), and developer.
+
+Out-of-Scope:
+
+Mobile optimization; the application will be optimized for desktop use only.
+Monetization features, as this is purely an internal tool.
+Extensive compliance and security standards (e.g., GDPR) beyond basic internal security norms.
+Complex multi-user support; roles are assigned to individual logins only.
+Real-time data updates beyond the daily ingestion cycle.
+3. User Flow
+
+A typical user journey begins with a login to the application, where a clean, modern dashboard greets the user. Upon logging in, the user sees an overview of all transactions with color-coded indicators showing match confidence levels (positive, neutral, negative). The dashboard presents the latest match probabilities and flags any transactions that require manual review, allowing the user to quickly assess which areas need attention.
+
+When a user clicks on a flagged transaction, they are taken to a detailed view where the AI’s reasoning for the match is explained along with supporting data from the integration sources. Approvers have the ability to approve or reject these matches directly within the interface. If a transaction is manually reviewed, the feedback provided helps train the matching algorithm to improve future accuracy. This manual review process is essential to the system’s iterative learning and accuracy improvement cycle over time.
+
+4. Core Features
+
+Data Ingestion:
+
+Daily collection of transaction data from Housecall Pro, QuickBooks, and Plaid (via Rows.com).
+Automatic processing and storage of transactions in Supabase.
+Matching Engine:
+
+Utilizes Bayesian reasoning to calculate the likelihood of transaction matches.
+Implements Monte Carlo simulations to handle uncertainty and data variability.
+Automatically matches transactions with a probability > 0.85.
+Flags transactions with probabilities between 0.5 and 0.85 for manual review.
+Rejects matches below a 0.5 probability.
+Dashboard Interface:
+
+Displays overall transactional data, individual match probabilities, and flagged items.
+Uses color-coded bars (indicative of positive, neutral, or negative matches) based on user feedback.
+Manual Review Module:
+
+Provides an interface for approvers to examine flagged matches.
+Allows users to approve or correct matches, with feedback being used to improve the algorithm.
+File Upload & Sync Module:
+
+A component for manually uploading Plaid files and syncing data from Rows.com.
+Role-Based Access Control:
+
+Different user roles (Approver, Analyst, Developer) with distinct permissions.
+5. Tech Stack & Tools
+
+Frontend:
+
+V0 (React-based UI framework) for building a dynamic, modular dashboard.
+TailwindCSS for styling the interface with a modern aesthetic.
+Supabase JS SDK for seamless integration with the backend.
+Backend:
+
+Python for executing Bayesian reasoning and Monte Carlo simulations.
+Supabase for centralized and secure data storage and user management.
+Integrations:
+
+Housecall Pro, QuickBooks, and Plaid (data provided via Rows.com) for data ingestion.
+Development Tools:
+
+Cursor for backend API development, debugging, and real-time suggestions.
+ChatGPT (GPT-4 O1 model) for advanced code generation and design assistance.
+6. Non-Functional Requirements
+
+Performance:
+
+Fast dashboard load times and quick display of match probabilities.
+Daily data processing with minimal downtime during the ingestion process.
+Security:
+
+Secure storage of financial transactions and sensitive data in Supabase.
+Role-based access permissions to ensure users only access authorized information.
+Usability:
+
+A clear, modern user interface with intuitive navigation and a clean aesthetic.
+Color-coded visual cues to quickly identify match statuses (positive, neutral, negative).
+Scalability:
+
+Ability to handle increased transaction volumes as the internal use case grows.
+Smooth integration between Python backend logic and the Supabase storage system.
+7. Constraints & Assumptions
+
+The application is designed for desktop use and might require adjustments if desktop-first responsiveness becomes an issue.
+It assumes daily transaction ingestion from Plaid via Rows.com API with established connectivity.
+The Bayesian and Monte Carlo logic is implemented in Python and assumes the availability and performance of the Supabase database.
+Role-based access is implemented per individual login, with very specific roles (Approver, Analyst, Developer) and does not support a multi-user complex hierarchy.
+The system assumes that the manual review feedback will be sufficient to continuously train and improve the matching algorithm.
+8. Known Issues & Potential Pitfalls
+
+Data Synchronization Delays:
+
+The delayed processing of check transactions might cause temporary mismatches. Use robust scheduling and error handling to mitigate this.
+Reliability of External APIs:
+
+Dependencies on external APIs (Housecall Pro, QuickBooks, Plaid via Rows.com) could lead to rate limits or occasional downtime.
+Implement retry mechanisms and fallback solutions for API rate limitations.
+Algorithm Training Feedback Loop:
+
+Continuous learning from manual reviews is dependent on consistent user input. Ensure there’s an easy and clear interface for manual matching so that the feedback loop is effective.
+Scalability Concerns:
+
+As internal usage grows, the system might experience performance bottlenecks, especially in data processing.
+Early optimization discussions should be considered if internal demand increases significantly.
+UI/UX Consistency:
+
+With a dynamic dashboard and multiple modules, ensuring consistency in design and user experience might be challenging.
+Use standardized design patterns and TailwindCSS configurations to keep things uniform.
+This document outlines all the necessary details for building the automated transaction matching application with a clear focus on internal use, modern design, effective integration, and intelligent matching logic. All aspects—from the user journey to technical integrations and known pitfalls—are covered to ensure a seamless implementation and iterative development process.

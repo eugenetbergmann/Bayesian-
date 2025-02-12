@@ -1,0 +1,130 @@
+Style and App Flow Guide
+
+1. App Overview
+
+The app is a Transaction Matching Tool designed to visualize and manage matches between transactions from two sources: Plaid and QuickBooks. It supports features such as:
+	•	Login functionality for user authentication.
+	•	A dashboard for managing pending matches.
+	•	A Bayesian Match Visualizer for understanding transaction match confidence.
+	•	An organized webhook process to automate workflows.
+
+2. App Flow
+
+Login Flow
+	1.	Purpose: Authenticate users.
+	2.	User Flow:
+	•	User is presented with a login form.
+	•	They enter an email and password.
+	•	Clicking Log In transitions to the Dashboard if authentication succeeds.
+	3.	UI Components:
+	•	Card: Center-aligned container.
+	•	Input Fields: For email and password.
+	•	Button: To submit login credentials.
+
+Dashboard Flow
+	1.	Purpose: Central hub for navigating app features.
+	2.	User Flow:
+	•	Users land on the Dashboard after login.
+	•	They can switch between the following tabs:
+	•	Overview: Displays summary metrics (e.g., pending matches, automation rate).
+	•	Bayesian Match: Opens the Bayesian Match Visualizer.
+	•	Webhook Process: Displays the webhook process steps.
+	•	Users can review, approve, or reject pending matches.
+	3.	UI Components:
+	•	Sidebar Navigation: Lists tabs with icons.
+	•	Header: Displays the current active tab title.
+	•	Cards: Summary metrics and recent pending matches.
+	•	Dropdown Menu: User profile options (e.g., settings, logout).
+
+Bayesian Match Visualizer Flow
+	1.	Purpose: Visualize the match confidence between two transactions.
+	2.	User Flow:
+	•	Users enter manual mode to adjust transaction data (amount, date, memo).
+	•	They click Calculate Match to compute the confidence percentage.
+	•	Match factors (e.g., amount, date, memo) are displayed with individual progress bars and weights.
+	•	Users can Save Match for model training.
+	3.	UI Components:
+	•	Cards: Contain transaction details and match factors.
+	•	Progress Bars: Visualize match percentages.
+	•	Buttons: For toggling modes, calculating matches, and saving data.
+
+Webhook Process Flow
+	1.	Purpose: Explain the webhook-based transaction matching process.
+	2.	User Flow:
+	•	Displays the steps for receiving and processing webhook requests.
+	•	Helps users understand the backend automation process.
+	3.	UI Components:
+	•	ProcessStep: Reusable component displaying a step with an icon, title, and description.
+
+3. Style Guide
+
+Color Palette
+	•	Primary Colors:
+	•	Gradient: Purple to pink (buttons, headers).
+	•	Accent: Green (indicates success), Orange (warnings), Red (errors).
+	•	Background Colors:
+	•	Light Mode: gray-50 to gray-100.
+	•	Dark Mode: gray-800 to gray-900.
+	•	Text Colors:
+	•	Default: gray-800 (light mode), gray-100 (dark mode).
+	•	Interactive Elements: blue-500 (links, icons).
+	•	Error Messages: red-600.
+
+Typography
+	•	Font Family: Sans-serif (system default or Tailwind’s default).
+	•	Headings: Bold, larger sizes (text-2xl, text-3xl).
+	•	Body Text: Normal weight, text-gray-600.
+
+Button Styles
+	•	Primary Buttons:
+	•	Gradient Background: bg-gradient-to-r from-purple-400 to-pink-500.
+	•	Hover State: Darker gradient (hover:from-purple-500 hover:to-pink-600).
+	•	Rounded Full: rounded-full.
+	•	Scale Effect: hover:scale-105 transition-all.
+	•	Secondary Buttons:
+	•	Ghost Variant: No background, only icon/text.
+	•	Hover State: Light background highlight.
+
+Card Styles
+	•	Base Styles:
+	•	Light Mode: bg-white shadow-md.
+	•	Dark Mode: bg-gray-800.
+	•	Rounded Corners: rounded-lg.
+	•	Headers:
+	•	Gradient Background: from-blue-500 to-purple-500.
+	•	Text: Bold and white.
+	•	Content:
+	•	Padding: p-4 to p-6 for consistency.
+
+Input Fields
+	•	Base Styles:
+	•	Background: bg-white.
+	•	Border: border-gray-300 focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50.
+	•	Rounded Corners: rounded-md.
+
+4. Reusable Components
+
+1. Button
+
+Use the Button component for all interactive actions.
+
+Example:
+
+<Button className="bg-gradient-to-r from-purple-400 to-pink-500 hover:from-purple-500 hover:to-pink-600 text-white">
+  Click Me
+</Button>
+
+2. Card
+
+Use the Card component to group related information.
+
+Example:
+
+<Card>
+  <CardHeader>
+    <CardTitle>Title</CardTitle>
+  </CardHeader>
+  <CardContent>
+    Content goes here.
+  </CardContent>
+</Card>
