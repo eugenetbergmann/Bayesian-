@@ -24,10 +24,11 @@ export class HousecallAPI {
     try {
       console.log(`Fetching paid invoices from Housecall Pro API, per_page=${perPage}`);
 
-      // Construct the URL with proper query parameters
-      const url = new URL(`${this.baseUrl}/invoices/paid`);
-      url.searchParams.append('limit', perPage.toString());
-      url.searchParams.append('offset', '0');
+      // Match the Flask implementation's endpoint structure
+      const url = new URL(`${this.baseUrl}/invoices`);
+      url.searchParams.append('per_page', perPage.toString());
+      url.searchParams.append('page', '1');
+      url.searchParams.append('status', 'paid');
 
       console.log('Request URL:', url.toString());
       console.log('API Headers:', {
@@ -59,13 +60,13 @@ export class HousecallAPI {
       const data = await response.json();
       console.log('Response Data Structure:', Object.keys(data));
 
-      // Check if we received the expected data structure
-      if (!Array.isArray(data) && !Array.isArray(data?.invoices)) {
+      // Match the Flask implementation's data structure expectations
+      const invoices = data?.data || data?.invoices || data;
+      if (!Array.isArray(invoices)) {
         console.error('Unexpected API response structure:', data);
         throw new APIError('Invalid API response format', 500);
       }
 
-      const invoices = Array.isArray(data) ? data : data.invoices;
       console.log(`Retrieved ${invoices.length} paid invoices`);
 
       // Process each invoice
