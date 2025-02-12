@@ -29,6 +29,86 @@ export class MemStorage implements IStorage {
     this.sessionStore = new MemoryStore({
       checkPeriod: 86400000,
     });
+
+    // Add synthetic transactions
+    const sampleTransactions: Transaction[] = [
+      {
+        id: this.currentTransactionId++,
+        amount: "1500.00",
+        date: new Date("2024-02-10"),
+        memo: "HVAC Installation Service",
+        source: "plaid",
+        sourceId: "pld_1",
+        matchProbability: "0.95",
+        matchedTransactionId: 2,
+        reviewStatus: "approved",
+        reviewerId: null,
+      },
+      {
+        id: this.currentTransactionId++,
+        amount: "1500.00",
+        date: new Date("2024-02-10"),
+        memo: "Installation Payment - Invoice #12345",
+        source: "quickbooks",
+        sourceId: "qb_1",
+        matchProbability: "0.95",
+        matchedTransactionId: 1,
+        reviewStatus: "approved",
+        reviewerId: null,
+      },
+      {
+        id: this.currentTransactionId++,
+        amount: "750.25",
+        date: new Date("2024-02-11"),
+        memo: "AC Repair and Maintenance",
+        source: "plaid",
+        sourceId: "pld_2",
+        matchProbability: "0.75",
+        matchedTransactionId: 4,
+        reviewStatus: "pending",
+        reviewerId: null,
+      },
+      {
+        id: this.currentTransactionId++,
+        amount: "755.00",
+        date: new Date("2024-02-12"),
+        memo: "Repair Service - Invoice #12346",
+        source: "quickbooks",
+        sourceId: "qb_2",
+        matchProbability: "0.75",
+        matchedTransactionId: 3,
+        reviewStatus: "pending",
+        reviewerId: null,
+      },
+      {
+        id: this.currentTransactionId++,
+        amount: "250.00",
+        date: new Date("2024-02-09"),
+        memo: "Filter Replacement",
+        source: "plaid",
+        sourceId: "pld_3",
+        matchProbability: "0.45",
+        matchedTransactionId: 6,
+        reviewStatus: "rejected",
+        reviewerId: 1,
+      },
+      {
+        id: this.currentTransactionId++,
+        amount: "275.00",
+        date: new Date("2024-02-15"),
+        memo: "Maintenance - Invoice #12347",
+        source: "quickbooks",
+        sourceId: "qb_3",
+        matchProbability: "0.45",
+        matchedTransactionId: 5,
+        reviewStatus: "rejected",
+        reviewerId: 1,
+      },
+    ];
+
+    sampleTransactions.forEach(transaction => {
+      this.transactions.set(transaction.id, transaction);
+    });
   }
 
   async getUser(id: number): Promise<User | undefined> {
@@ -75,7 +155,7 @@ export class MemStorage implements IStorage {
     if (!transaction) {
       throw new Error("Transaction not found");
     }
-    
+
     const updated: Transaction = {
       ...transaction,
       reviewStatus: status,
