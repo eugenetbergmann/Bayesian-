@@ -1,0 +1,125 @@
+import requests
+from flask import Blueprint, jsonify, request
+from config import Config
+from utils.error_handlers import handle_api_error, APIError
+import logging
+from extensions import db
+from models import Invoice
+from datetime import datetime
+
+housecall_bp = Blueprint('housecall', __name__)
+
+class HousecallAPI:
+    def __init__(self):
+        self.base_url = Config.HOUSECALL_API_BASE_URL
+        self.headers = {
+            'Authorization': f'Bearer {Config.HOUSECALL_API_TOKEN}',
+            'Content-Type': 'application/json'
+        }
+
+    def parse_datetime(self, date_str):
+        """Parse datetime string from API response"""
+        return datetime.fromisoformat(date_str.replace('Z', '+00:00')) if date_str else None
+
+    def get_invoices(self, per_page=None):
+        """
+        Fetch invoices from Housecall Pro API and store them in database
+
+        Args:
+            per_page (int): Number of invoices per page
+
+        Returns:
+            dict: API response containing invoice data
+        """
+        endpoint = f"{self.base_url}{Config.INVOICES_ENDPOINT}"
+        params = {
+            'per_page': per_page or Config.DEFAULT_PER_PAGE
+        }
+
+        try:
+            logging.debug(f"Requesting invoices from: {endpoint}")
+            logging.debug(f"Request params: {params}")
+
+            response = requests.get(
+                endpoint,
+                headers=self.headers,
+                params=params
+            )
+
+            logging.debug(f"Response status code: {response.status_code}")
+
+            if response.status_code != 200:
+                error_msg = f"API request failed with status {response.status_code}"
+                logging.error(f"{error_msg}: {response.text}")
+                raise APIError(message=error_msg, status_code=response.status_code)
+
+            data = response.json()
+
+            # Store invoices in database
+            for invoice_data in data.get('invoices', []):
+                invoice = Invoice.query.filter_by(housecall_id=invoice_data['id']).first()
+                if not invoice:
+                    # Convert amounts from cents to dollars
+                    amount = invoice_data.get('amount', 0) / 100
+                    due_amount = invoice_data.get('due_amount', 0) / 100
+
+                    invoice = Invoice(
+                        housecall_id=invoice_data['id'],
+                        invoice_number=invoice_data.get('invoice_number'),
+                        customer_name=None,  # Will implement customer name fetching later
+                        amount=amount,
+                        due_amount=due_amount,
+                        status=invoice_data.get('status'),
+                        invoice_date=self.parse_datetime(invoice_data.get('invoice_date')),
+                        due_date=self.parse_datetime(invoice_data.get('due_at')),
+                        paid_at=self.parse_datetime(invoice_data.get('paid_at')),
+                        service_date=self.parse_datetime(invoice_data.get('service_date')),
+                        job_id=invoice_data.get('job_id')
+                    )
+                    db.session.add(invoice)
+
+            db.session.commit()
+            return data
+
+        except requests.exceptions.RequestException as e:
+            error_msg = f"Error fetching invoices: {str(e)}"
+            logging.error(error_msg)
+            raise APIError(message=error_msg, status_code=500)
+
+@housecall_bp.route('/invoices', methods=['GET'])
+@handle_api_error
+def get_invoices():
+    """
+    Endpoint to fetch invoices
+
+    Query Parameters:
+        per_page (optional): Number of invoices per page
+        cached (optional): If true, return cached invoices from database
+    """
+    try:
+        per_page = request.args.get('per_page', type=int)
+        use_cache = request.args.get('cached', type=bool, default=False)
+
+        logging.info(f"Received request for invoices with per_page={per_page}, cached={use_cache}")
+
+        if use_cache:
+            # Return cached invoices from database
+            invoices = Invoice.query.all()
+            return jsonify({
+                'status': 'success',
+                'data': {
+                    'invoices': [invoice.to_dict() for invoice in invoices]
+                }
+            })
+
+        # Fetch fresh data from API
+        api = HousecallAPI()
+        invoices = api.get_invoices(per_page=per_page)
+
+        return jsonify({
+            'status': 'success',
+            'data': invoices
+        })
+    except Exception as e:
+        logging.error(f"Unexpected error in get_invoices endpoint: {str(e)}")
+        raise

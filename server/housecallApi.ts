@@ -13,6 +13,9 @@ export class HousecallAPI {
   private apiKey: string;
 
   constructor(apiKey: string) {
+    if (!apiKey) {
+      throw new Error('HOUSECALL_API_KEY must be provided');
+    }
     this.apiKey = apiKey;
   }
 
@@ -20,9 +23,13 @@ export class HousecallAPI {
     try {
       console.log(`Fetching paid invoices from Housecall Pro API, per_page=${perPage}`);
 
-      const url = new URL(`${this.baseUrl}/invoices`);
-      url.searchParams.append('status', 'paid');
+      const url = new URL(`${this.baseUrl}/pro/invoices`);
+      url.searchParams.append('status[]', 'paid');
       url.searchParams.append('per_page', perPage.toString());
+      url.searchParams.append('page', '1');
+
+      console.log('Request URL:', url.toString());
+      console.log('Using API key:', this.apiKey.substring(0, 4) + '...');
 
       const response = await fetch(url.toString(), {
         method: 'GET',
@@ -63,7 +70,6 @@ export class HousecallAPI {
             },
           };
 
-          // Store raw data and normalize it
           await storage.createHousecallTransaction(
             housecallTransaction.rawData,
             housecallTransaction.housecallId
