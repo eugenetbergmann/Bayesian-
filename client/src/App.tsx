@@ -6,12 +6,14 @@ import { AuthProvider } from "./hooks/use-auth";
 import NotFound from "@/pages/not-found";
 import AuthPage from "@/pages/auth-page";
 import Dashboard from "@/pages/dashboard";
+import SystemFlowVisualizer from "@/components/system-flow-visualizer";
 import { ProtectedRoute } from "./lib/protected-route";
 
 function Router() {
   return (
     <Switch>
       <ProtectedRoute path="/" component={Dashboard} />
+      <Route path="/flow" component={SystemFlowVisualizer} />
       <Route path="/auth" component={AuthPage} />
       <Route component={NotFound} />
     </Switch>
