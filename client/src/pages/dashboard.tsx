@@ -3,6 +3,7 @@ import { useAuth } from "@/hooks/use-auth";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Transaction } from "@shared/schema";
 import BayesianMatchVisualizer from "@/components/bayesian-match-visualizer";
+import NormalizedTransactions from "@/components/normalized-transactions";
 import WebhookProcess from "@/components/webhook-process";
 import TransactionList from "@/components/transaction-list";
 import { Button } from "@/components/ui/button";
@@ -11,7 +12,7 @@ import { Loader2, RefreshCw } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 
-type TabType = "overview" | "bayesian" | "webhook" | "housecall";
+type TabType = "overview" | "bayesian" | "webhook" | "housecall" | "normalized";
 
 export default function Dashboard() {
   const [activeTab, setActiveTab] = useState<TabType>("overview");
@@ -91,6 +92,13 @@ export default function Dashboard() {
                 onClick={() => setActiveTab("housecall")}
               >
                 Housecall Pro
+              </Button>
+              <Button
+                variant={activeTab === "normalized" ? "default" : "ghost"}
+                className="w-full justify-start"
+                onClick={() => setActiveTab("normalized")}
+              >
+                Normalized Data
               </Button>
             </nav>
             <div className="pt-6 border-t">
@@ -178,6 +186,12 @@ export default function Dashboard() {
                   </Button>
                 </CardContent>
               </Card>
+            </div>
+          )}
+
+          {activeTab === "normalized" && (
+            <div className="space-y-6">
+              <NormalizedTransactions transactions={transactions || []} />
             </div>
           )}
         </main>
