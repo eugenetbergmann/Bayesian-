@@ -3,6 +3,10 @@ import { createServer, type Server } from "http";
 import { setupAuth } from "./auth";
 import { storage } from "./storage";
 import { insertTransactionSchema } from "@shared/schema";
+import { HousecallAPI } from "./housecallApi";
+
+// Initialize HousecallAPI with the API key from environment
+const housecallApi = new HousecallAPI(process.env.HOUSECALL_API_KEY!);
 
 export function registerRoutes(app: Express): Server {
   setupAuth(app);
@@ -31,7 +35,7 @@ export function registerRoutes(app: Express): Server {
 
     const { id } = req.params;
     const { status } = req.body;
-    
+
     if (!["approved", "rejected"].includes(status)) {
       return res.status(400).json({ message: "Invalid status" });
     }
@@ -43,6 +47,24 @@ export function registerRoutes(app: Express): Server {
     );
 
     res.json(transaction);
+  });
+
+  // Housecall Pro Paid Invoices Routes
+  app.post("/api/housecall/sync-invoices", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+
+    try {
+      const perPage = req.query.per_page ? parseInt(req.query.per_page as string) : undefined;
+      await housecallApi.getInvoices(perPage);
+      res.json({ message: "Successfully synced paid invoices from Housecall Pro" });
+    } catch (error) {
+      console.error('Error syncing Housecall Pro invoices:', error);
+      if (error instanceof Error) {
+        res.status(500).json({ message: error.message });
+      } else {
+        res.status(500).json({ message: "An unknown error occurred while syncing invoices" });
+      }
+    }
   });
 
   const httpServer = createServer(app);
