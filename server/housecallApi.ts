@@ -18,7 +18,7 @@ export class HousecallAPI {
     }
     this.apiKey = apiKey;
     // Update base URL to include API version
-    this.baseUrl = 'https://api.housecallpro.com/v1';
+    this.baseUrl = 'https://api.housecallpro.com';
   }
 
   async getInvoices(perPage: number = 100): Promise<void> {
@@ -27,9 +27,7 @@ export class HousecallAPI {
 
       // Match the Flask implementation's endpoint structure
       const url = new URL(`${this.baseUrl}/invoices`);
-      url.searchParams.append('per_page', perPage.toString());
-      url.searchParams.append('page', '1');
-      url.searchParams.append('status', 'paid');
+      url.searchParams.append('per_page', '1');
 
       console.log('Request URL:', url.toString());
       console.log('API Headers:', {
