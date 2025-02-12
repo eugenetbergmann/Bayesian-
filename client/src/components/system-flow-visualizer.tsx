@@ -8,7 +8,6 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import { cn } from "@/lib/utils";
 
 export default function SystemFlowVisualizer() {
   const { data: transactions, isLoading } = useQuery<Transaction[]>({
@@ -73,7 +72,7 @@ export default function SystemFlowVisualizer() {
   ];
 
   return (
-    <div className="space-y-8 max-w-6xl mx-auto p-6">
+    <div className="space-y-8 max-w-6xl mx-auto p-4 md:p-6">
       <Card className="border-none shadow-lg">
         <CardHeader>
           <CardTitle className="text-xl font-semibold">
@@ -82,16 +81,16 @@ export default function SystemFlowVisualizer() {
         </CardHeader>
         <CardContent>
           <div className="relative">
-            {/* Flow lines */}
-            <div className="absolute top-1/2 left-0 right-0 h-0.5 bg-muted-foreground/20" />
-            
+            {/* Flow lines - Hidden on mobile */}
+            <div className="absolute top-1/2 left-0 right-0 h-0.5 bg-muted-foreground/20 hidden md:block" />
+
             {/* Stages */}
-            <div className="relative grid grid-cols-4 gap-4">
+            <div className="relative grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
               {stages.map((stage, index) => (
                 <TooltipProvider key={index}>
                   <Tooltip>
                     <TooltipTrigger asChild>
-                      <div className="relative flex flex-col items-center gap-4 p-6 bg-card rounded-lg border">
+                      <div className="relative flex flex-col items-center gap-4 p-4 md:p-6 bg-card rounded-lg border">
                         <div className="size-16 rounded-full bg-primary/10 flex items-center justify-center text-primary">
                           {stage.icon}
                         </div>
@@ -105,8 +104,9 @@ export default function SystemFlowVisualizer() {
                             ))}
                           </div>
                         </div>
+                        {/* Flow arrows - Hidden on mobile */}
                         {index < stages.length - 1 && (
-                          <ArrowRight className="absolute -right-6 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                          <ArrowRight className="absolute -right-6 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground hidden md:block" />
                         )}
                       </div>
                     </TooltipTrigger>
