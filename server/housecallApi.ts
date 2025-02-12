@@ -17,6 +17,7 @@ export class HousecallAPI {
       throw new Error('HOUSECALL_API_KEY must be provided');
     }
     this.apiKey = apiKey;
+    // Update base URL to include API version
     this.baseUrl = 'https://api.housecallpro.com/v1';
   }
 
