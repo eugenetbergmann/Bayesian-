@@ -1,21 +1,47 @@
 import { useState } from "react";
 import { useAuth } from "@/hooks/use-auth";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Transaction } from "@shared/schema";
 import BayesianMatchVisualizer from "@/components/bayesian-match-visualizer";
 import WebhookProcess from "@/components/webhook-process";
 import TransactionList from "@/components/transaction-list";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Loader2 } from "lucide-react";
+import { Loader2, RefreshCw } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
+import { apiRequest } from "@/lib/queryClient";
 
-type TabType = "overview" | "bayesian" | "webhook";
+type TabType = "overview" | "bayesian" | "webhook" | "housecall";
 
 export default function Dashboard() {
   const [activeTab, setActiveTab] = useState<TabType>("overview");
   const { user, logoutMutation } = useAuth();
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
+
   const { data: transactions, isLoading } = useQuery<Transaction[]>({
     queryKey: ["/api/transactions"],
+  });
+
+  const syncMutation = useMutation({
+    mutationFn: async () => {
+      const res = await apiRequest("POST", "/api/housecall/sync-invoices");
+      return res.json();
+    },
+    onSuccess: () => {
+      toast({
+        title: "Success",
+        description: "Successfully synced Housecall Pro invoices",
+      });
+      queryClient.invalidateQueries({ queryKey: ["/api/transactions"] });
+    },
+    onError: (error) => {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to sync invoices",
+        variant: "destructive",
+      });
+    },
   });
 
   if (isLoading) {
@@ -58,6 +84,13 @@ export default function Dashboard() {
                 onClick={() => setActiveTab("webhook")}
               >
                 Webhook Process
+              </Button>
+              <Button
+                variant={activeTab === "housecall" ? "default" : "ghost"}
+                className="w-full justify-start"
+                onClick={() => setActiveTab("housecall")}
+              >
+                Housecall Pro
               </Button>
             </nav>
             <div className="pt-6 border-t">
@@ -114,6 +147,38 @@ export default function Dashboard() {
 
           {activeTab === "webhook" && (
             <WebhookProcess />
+          )}
+
+          {activeTab === "housecall" && (
+            <div className="space-y-6">
+              <Card>
+                <CardHeader>
+                  <CardTitle>Housecall Pro Invoice Sync</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-muted-foreground mb-4">
+                    Sync paid invoices from Housecall Pro to match with your transactions.
+                  </p>
+                  <Button
+                    onClick={() => syncMutation.mutate()}
+                    disabled={syncMutation.isPending}
+                    className="w-full sm:w-auto"
+                  >
+                    {syncMutation.isPending ? (
+                      <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        Syncing...
+                      </>
+                    ) : (
+                      <>
+                        <RefreshCw className="mr-2 h-4 w-4" />
+                        Sync Invoices
+                      </>
+                    )}
+                  </Button>
+                </CardContent>
+              </Card>
+            </div>
           )}
         </main>
       </div>
