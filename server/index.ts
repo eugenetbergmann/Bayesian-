@@ -61,8 +61,8 @@ app.use((req, res, next) => {
     await setupVite(app, server);
   }
 
-  // ALWAYS serve the app on port 5000 and bind to all interfaces
-  const PORT = process.env.PORT || 5000;
+  // Fix port binding for both development and production
+  const PORT = parseInt(process.env.PORT || "5000", 10);
   server.listen(PORT, "0.0.0.0", () => {
     log(`Server running at http://0.0.0.0:${PORT}`);
   });
