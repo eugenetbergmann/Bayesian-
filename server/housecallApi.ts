@@ -24,8 +24,8 @@ export class HousecallAPI {
     try {
       console.log(`Fetching paid invoices from Housecall Pro API, per_page=${perPage}`);
 
-      // Use the correct endpoint structure
-      const url = new URL(`${this.baseUrl}/invoices`);
+      // Ensure proper URL construction without double slashes
+      const url = new URL('/invoices', this.baseUrl);
       url.searchParams.append('per_page', perPage.toString());
 
       console.log('Request URL:', url.toString());
@@ -50,7 +50,7 @@ export class HousecallAPI {
         const errorBody = await response.text();
         console.error('Error Response Body:', errorBody);
         throw new APIError(
-          `Failed to fetch invoices: ${response.statusText} (${response.status})`,
+          `Failed to fetch invoices: ${errorBody || response.statusText}`,
           response.status
         );
       }
@@ -58,14 +58,14 @@ export class HousecallAPI {
       const data = await response.json();
       console.log('Response Data Structure:', Object.keys(data));
 
-      // Match the Flask implementation's data structure expectations
-      const invoices = data?.data || data?.invoices || data;
+      // Handle the API response structure
+      const invoices = Array.isArray(data) ? data : data?.data || data?.invoices;
       if (!Array.isArray(invoices)) {
         console.error('Unexpected API response structure:', data);
         throw new APIError('Invalid API response format', 500);
       }
 
-      console.log(`Retrieved ${invoices.length} paid invoices`);
+      console.log(`Retrieved ${invoices.length} invoices`);
 
       // Process each invoice
       for (const invoice of invoices) {
@@ -104,7 +104,7 @@ export class HousecallAPI {
       if (error instanceof APIError) {
         throw error;
       }
-      throw new APIError('Failed to fetch invoices', 500);
+      throw new APIError(error instanceof Error ? error.message : 'Failed to fetch invoices', 500);
     }
   }
 }
