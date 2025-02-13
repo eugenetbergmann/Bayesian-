@@ -17,7 +17,7 @@ export class HousecallAPI {
       throw new Error('HOUSECALL_API_KEY must be provided');
     }
     this.apiKey = apiKey;
-    this.baseUrl = 'https://api.housecallpro.com';
+    this.baseUrl = 'https://api.housecallpro.com/v1';
   }
 
   async getInvoices(perPage: number = 100): Promise<void> {
