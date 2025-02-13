@@ -17,17 +17,18 @@ export class HousecallAPI {
       throw new Error('HOUSECALL_API_KEY must be provided');
     }
     this.apiKey = apiKey;
-    // Update base URL to include API version
-    this.baseUrl = 'https://api.housecallpro.com';
+    // Update to use production API endpoint
+    this.baseUrl = 'https://pro.housecallpro.com/pro/api/v2';
   }
 
   async getInvoices(perPage: number = 100): Promise<void> {
     try {
       console.log(`Fetching paid invoices from Housecall Pro API, per_page=${perPage}`);
 
-      // Match the Flask implementation's endpoint structure
-      const url = new URL(`${this.baseUrl}/invoices`);
-      url.searchParams.append('per_page', '1');
+      // Update to use correct endpoint path
+      const url = new URL(`${this.baseUrl}/invoices/paid`);
+      url.searchParams.append('per_page', perPage.toString());
+      url.searchParams.append('page', '1');
 
       console.log('Request URL:', url.toString());
       console.log('API Headers:', {
