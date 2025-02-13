@@ -1,4 +1,3 @@
-
 import { db } from './db';
 import { eq } from 'drizzle-orm';
 import { transactions } from '@shared/schema';
@@ -38,13 +37,13 @@ async function debugDatabase() {
       });
     } else {
       console.log(chalk.yellow('\nNo Housecall transactions found'));
-      
+
       // 3. Debug normalization process
       console.log(chalk.blue('\n🔍 Checking normalization process:'));
-      
+
       // Add debug logging to storage.ts
       console.log('Adding debug logging to normalizeHousecallTransaction...');
-      
+
       console.log(chalk.yellow('\nPossible issues to check:'));
       console.log('1. Verify HOUSECALL_API_KEY is set correctly');
       console.log('2. Check if getInvoices() is being called');
@@ -55,7 +54,7 @@ async function debugDatabase() {
     console.error(chalk.red('Error querying transactions:'), error);
     console.error(chalk.yellow('Database connection details:'), {
       url: process.env.DATABASE_URL ? 'Set' : 'Not set',
-      connectionAttempted: !!db
+      error: error instanceof Error ? error.message : String(error)
     });
   }
 }
