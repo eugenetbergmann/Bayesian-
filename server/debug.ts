@@ -53,6 +53,10 @@ async function debugDatabase() {
     }
   } catch (error) {
     console.error(chalk.red('Error querying transactions:'), error);
+    console.error(chalk.yellow('Database connection details:'), {
+      url: process.env.DATABASE_URL ? 'Set' : 'Not set',
+      connectionAttempted: !!db
+    });
   }
 }
 
