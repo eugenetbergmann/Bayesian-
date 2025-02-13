@@ -255,6 +255,9 @@ export class DatabaseStorage implements IStorage {
   }
 
   private normalizeHousecallTransaction(rawData: any): InsertTransaction {
+    console.log('🔄 Starting Housecall transaction normalization');
+    console.log('Raw data:', JSON.stringify(rawData, null, 2));
+    
     if (!rawData) {
       throw new Error("No data provided for Housecall transaction normalization");
     }
